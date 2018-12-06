@@ -92,38 +92,6 @@ function deleteToken(token, cb) {
 	});
 }
 
-function criarDatabase(database, id, cb) {
-	if (!cb) {
-		return new Error('function must have a callback');
-	}
-
-	LoginDAO.criarDatabase(database, function (err, rows) {
-		if (err) {
-			console.log(err)
-			return cb(err);
-		}
-
-		var query = {
-			_id: objectId(id)
-		}
-
-		var parameter = {
-			primeiroAcesso: false
-		}
-
-		EstabelecimentoDAO.atualizarEstabelecimentos(query, parameter, function (err, rows){
-			if (err) {
-				console.log(err)
-				return cb(err);
-			}
-
-			cb(null);
-
-		});
-		
-	});
-}
-
 var nativeAuthentication = function (client, username, password, scope, done) {
 
 	if (username === null) done(null, null);
@@ -172,37 +140,16 @@ var nativeAuthentication = function (client, username, password, scope, done) {
 					database: rows[0].database
 				}
 
-				if (rows[0].primeiroAcesso) {
+				saveToken(rows[0]._id, rows[0].nomeFantasia, element._id, element.nome, scope, 3600, function (err, nome, token, permission, expiration) {
+					if (err) {
+						console.log(err)
+						return done(err);
+					}
 
-					criarDatabase(rows[0].database, rows[0]._id, function (err) {
-						if (err) {
-							console.log(err)
-							return done(err);
-						}
+					done(null, token, null, { scope: JSON.stringify(permission) })
 
-						saveToken(rows[0]._id, rows[0].nomeFantasia, element._id, element.nome, scope, 3600, function (err, nome, token, permission, expiration) {
-							if (err) {
-								console.log(err)
-								return done(err);
-							}
-	
-							done(null, token, null, { scope: JSON.stringify(permission) })
-	
-						});
-					});
+				});
 
-				} else {
-
-					saveToken(rows[0]._id, rows[0].nomeFantasia, element._id, element.nome, scope, 3600, function (err, nome, token, permission, expiration) {
-						if (err) {
-							console.log(err)
-							return done(err);
-						}
-
-						done(null, token, null, { scope: JSON.stringify(permission) })
-
-					});
-				}
 				i++;
 			}
 		});
@@ -210,7 +157,7 @@ var nativeAuthentication = function (client, username, password, scope, done) {
 		if (i == 0) {
 			done(null, false);
 		}
-	
+
 
 	});
 }
